@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Api.Cliente.Models;
 using System.Data.SqlClient;
-using Api.Cliente.DataContext;
+using Api.Cliente.Services;
 using Microsoft.EntityFrameworkCore;
+using Api.Cliente.Interfaces;
 
 namespace Api.Cliente.Controllers
 {
@@ -10,61 +11,105 @@ namespace Api.Cliente.Controllers
     [Route("")]
     public class ClienteController : ControllerBase
     {
-        Conexao conexao = new Conexao();
-        SqlCommand sqlCommand = new SqlCommand();
-        public string mensagem = "";
-         
-
-        [HttpPost]
-        [Route("/api/v1/clientes")]
-        public ActionResult<ClienteModel> AdicionarCliente([FromBody] ClienteModel cliente)
+        private readonly IClienteService _clienteService;
+        public ClienteController(IClienteService clienteService)
         {
-            sqlCommand.CommandText = "INSERT INTO cliente (cpf, nome, sobrenome, datadenascimento)" +
-                 "VALUES (@cpf, @nome, @sobrenome, @datadenascimento )";
+            _clienteService = clienteService;
+        }
 
-            sqlCommand.Parameters.AddWithValue("@cpf", cliente.Cpf);
-            sqlCommand.Parameters.AddWithValue("@nome", cliente.Nome);
-            sqlCommand.Parameters.AddWithValue("@sobrenome", cliente.Sobrenome);
-            sqlCommand.Parameters.AddWithValue("@datadenascimento", cliente.DataDeNascimento);
-
+        [HttpGet]
+        [Route("/api/v1/cliente")]
+        public ActionResult<ClienteModel> BuscarTodosClientes()
+        {
             try
             {
-                sqlCommand.Connection = conexao.Conectar();
-                sqlCommand.ExecuteNonQuery();
-                conexao.desconectar();
-                this.mensagem = "Cliente Cadastrado!!";
+                var clientes = _clienteService.BuscarTodos();
+                if (clientes != null && clientes.Count > 0)
+                    return Ok(clientes);
+
+                else
+                    return BadRequest("Nenhum cliente encontrado!");
             }
-            catch (SqlException ex)
+            catch
             {
-                this.mensagem = "Erro ao cadastrar cliente";
+                return BadRequest("Nenhum cliente encontrado!");
+            }
+        }
+
+        [HttpGet]
+        [Route("/api/v1/cliente/{cpf}")]
+        public ActionResult<ClienteModel> BuscarCliente(string cpf)
+        {
+            try
+            {
+                var cliente = _clienteService.Buscar(cpf);
+                if (cliente != null)
+                    return Ok(cliente);
+
+                else
+                    return BadRequest("Cliente não encontrado!");
+            }
+            catch
+            {
+                return BadRequest("Cliente não encontrado!");
+            }
+        }
+
+        [HttpPost]
+        [Route("/api/v1/cliente")]
+        public ActionResult<ClienteModel> CadastrarCliente([FromBody] ClienteModel cliente)
+        {
+            try
+            {
+                if (_clienteService.Cadastrar(cliente) == true)
+                    return CreatedAtAction(null,"Cliente Cadastrado com suceeso!");
+
+                else
+                    return BadRequest("Erro ao Cadastrar cliente!");
+            }
+            catch
+            {
+                return BadRequest("Erro ao Cadastrar cliente!");
             }
 
-            return cliente;
         }
 
         [HttpDelete]
-        [Route("/api/v1/clientes/{cpf}")]
+        [Route("/api/v1/cliente/{cpf}")]
         public ActionResult<ClienteModel> ExcluirCliente(string cpf)
         {
-            object parametro = cpf;
-            sqlCommand.CommandText = "DELETE FROM cliente WHERE cpf = @cpf ;";
-            object parametrosSql = new { @cpf = cpf };
-
             try
             {
-                sqlCommand.Connection = conexao.Conectar();
-                sqlCommand.ExecuteNonQuery();
-                conexao.desconectar();
-                this.mensagem = "Cliente Cadastrado!!";
-            }
-            catch (SqlException ex)
-            {
-                this.mensagem = "Erro ao cadastrar cliente";
-            }
+                if (_clienteService.Excluir(cpf) == true)
+                    return Ok("Cliente Excluído com suceeso!");
 
-            return Ok(cpf);
-         }
+                else
+                    return BadRequest("Erro ao Excluir cliente!");
+            }
+            catch
+            {
+                return BadRequest("Erro ao Excluir cliente!");
+            }
+        }
+
+        [HttpPut]
+        [Route("/api/v1/cliente/{cpf}")]
+        public ActionResult<ClienteModel> AlterarCliente(string cpf, [FromBody] ClienteModel cliente)
+        {
+            try
+            {
+                if (_clienteService.Alterar(cpf, cliente) == true)
+                    return Ok("Cliente Alterado com suceeso!");
+
+                else
+                    return BadRequest("Erro ao Alterar cliente!");
+            }
+            catch
+            {
+                return BadRequest("Erro ao Alterar cliente!");
+            }
+        }
+
     }
 }
-
 

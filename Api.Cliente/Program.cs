@@ -1,4 +1,6 @@
-using Api.Cliente.DataContext;
+
+using Api.Cliente.Interfaces;
+using Api.Cliente.Services;
 using System.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Add services to the container.
+builder.Services.AddSingleton<IClienteService, ClienteService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
